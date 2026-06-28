@@ -3,29 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="color-scheme" content="dark only">
+<meta name="color-scheme" content="light only">
 <title>Become One</title>
 <script data-goatcounter="https://steffenhuck.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 <style>
   :root{
-    color-scheme:dark;
-    --bg:#1a2029;
+    color-scheme:light;
+    /* page (light) */
+    --bg:#eceef0;
+    --ink:#2a3138;        /* dark text on light page */
+    --muted:#6b7682;      /* muted dark text */
+    --line:#c7ccd1;       /* light borders */
+    --surface:#f7f8f9;    /* light key/button face */
+    --surface-edge:#d4d9dd;
+    /* board (stays dark — the focused stage) */
     --board:#28303c;
     --cell:#333d4b;
     --cell-edge:#43505f;
     --obstacle:#11151a;
-    --ink:#eef3f7;
-    --muted:#94a2b1;
-    --a:#e2925a;        /* warm — the body */
-    --b:#4ba6df;        /* cool — the mind */
+    /* pieces (unchanged) */
+    --a:#e2925a;          /* warm — the body */
+    --b:#4ba6df;          /* cool — the mind */
     --ok:#5fb98a;
-    --line:#43505f;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;height:100%;background:#1a2029;}
-  html{background:#1a2029;}
+  html,body{margin:0;height:100%;background:#eceef0;}
+  html{background:#eceef0;}
   body{
-    background:#1a2029;
+    background:#eceef0;
     color:var(--ink);
     font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
     display:flex;flex-direction:column;align-items:center;
@@ -34,9 +39,9 @@
     user-select:none;-webkit-user-select:none;
     overflow-x:hidden;
   }
-  header{text-align:center;margin:22px 0 8px;}
-  h1{font-weight:600;font-size:30px;letter-spacing:.02em;margin:0;font-style:italic;
-    color:#d8853b;}
+  header{text-align:center;margin:28px 0 8px;}
+  h1{font-weight:600;font-size:42px;letter-spacing:.01em;margin:0 0 20px;font-style:italic;
+    color:var(--a);line-height:1.1;}
   .tagline{color:var(--muted);font-size:13px;margin:5px auto 0;letter-spacing:.04em;
     font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-style:normal;
     max-width:300px;line-height:1.5;}
@@ -62,7 +67,7 @@
     position:relative;flex-shrink:0;
     width:var(--board-size,320px);height:var(--board-size,320px);
     background:var(--board);border-radius:18px;padding:var(--pad);
-    box-shadow:0 10px 40px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.03);
+    box-shadow:0 8px 28px rgba(40,48,60,.28), inset 0 0 0 1px rgba(255,255,255,.04);
     touch-action:none;
   }
   .grid{position:relative;width:100%;height:100%;}
@@ -89,10 +94,11 @@
 
   .pad{display:grid;grid-template-columns:repeat(3,58px);grid-template-rows:repeat(3,58px);
     gap:8px;margin:22px 0 6px;flex-shrink:0;}
-  .pad button{background:var(--cell);color:var(--ink);
-    border:1px solid var(--cell-edge);border-radius:12px;font-size:22px;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;transition:.12s;}
-  .pad button:active{background:var(--a);color:#101418;transform:scale(.94);}
+  .pad button{background:var(--surface);color:var(--ink);
+    border:1px solid var(--surface-edge);border-radius:12px;font-size:22px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:.12s;
+    box-shadow:0 1px 2px rgba(0,0,0,.06);}
+  .pad button:active{background:var(--a);color:#fff;transform:scale(.94);}
   .pad .spacer{visibility:hidden;}
 
   .controls{display:flex;gap:10px;margin:6px 0 30px;}
@@ -106,15 +112,15 @@
     z-index:50;backdrop-filter:blur(3px);text-align:center;padding:30px;}
   .win.show{display:flex;animation:fade .4s ease;}
   @keyframes fade{from{opacity:0}to{opacity:1}}
-  .win h2{font-style:italic;font-weight:500;font-size:30px;margin:0 0 6px;}
-  .win p{color:var(--muted);margin:0 0 22px;font-family:ui-monospace,Menlo,monospace;font-size:13px;}
+  .win h2{font-style:italic;font-weight:500;font-size:30px;margin:0 0 6px;color:#f4f7fa;}
+  .win p{color:#aab4bf;margin:0 0 22px;font-family:ui-monospace,Menlo,monospace;font-size:13px;}
   .winBtns{display:flex;flex-direction:column;gap:10px;align-items:center;}
-  .win button{background:var(--a);color:#101418;border:none;border-radius:10px;
+  .win button{background:var(--a);color:#fff;border:none;border-radius:10px;
     padding:12px 26px;font-size:15px;font-family:inherit;font-style:italic;cursor:pointer;
     min-width:200px;}
-  .win button.secondary{background:transparent;color:var(--muted);
-    border:1px solid var(--line);}
-  .win button.secondary:active{color:var(--ink);border-color:var(--a);}
+  .win button.secondary{background:transparent;color:#aab4bf;
+    border:1px solid rgba(255,255,255,.25);}
+  .win button.secondary:active{color:#fff;border-color:var(--a);}
   .hint{color:var(--muted);font-size:12px;margin-top:2px;height:16px;
     font-family:ui-monospace,Menlo,monospace;letter-spacing:.03em;}
 </style>
