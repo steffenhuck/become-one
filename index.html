@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="color-scheme" content="dark only">
+<title>Become One</title>
+<script data-goatcounter="https://steffenhuck.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+<style>
+  :root{
+    color-scheme:dark;
+    --bg:#101418;
+    --board:#1b2129;
+    --cell:#232b35;
+    --cell-edge:#2d3744;
+    --obstacle:#0c0f13;
+    --ink:#e8eef2;
+    --muted:#7f8c99;
+    --a:#d8853b;        /* warm — the body */
+    --b:#3b9bd8;        /* cool — the mind */
+    --ok:#5fb98a;
+    --line:#2d3744;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:#101418;}
+  html{background:#101418;}
+  body{
+    background:#101418;
+    color:var(--ink);
+    font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    display:flex;flex-direction:column;align-items:center;
+    min-height:100vh;min-height:100dvh;
+    padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
+    user-select:none;-webkit-user-select:none;
+    overflow-x:hidden;
+  }
+  header{text-align:center;margin:22px 0 8px;}
+  h1{font-weight:600;font-size:30px;letter-spacing:.02em;margin:0;font-style:italic;
+    color:#d8853b;}
+  .tagline{color:var(--muted);font-size:13px;margin:5px auto 0;letter-spacing:.04em;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-style:normal;
+    max-width:300px;line-height:1.5;}
+
+  .difficulty{display:flex;gap:6px;margin:16px 0 6px;}
+  .difficulty button{
+    background:transparent;color:var(--muted);
+    border:1px solid var(--line);border-radius:999px;
+    padding:7px 16px;font-size:13px;font-family:inherit;font-style:italic;
+    cursor:pointer;transition:.18s;
+  }
+  .difficulty button.active{color:var(--ink);border-color:var(--a);background:rgba(216,133,59,.10);}
+
+  .meta{
+    display:flex;justify-content:space-between;align-items:baseline;
+    width:var(--board-size,320px);margin:14px 2px 8px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:12px;color:var(--muted);letter-spacing:.05em;
+  }
+  .meta b{color:var(--ink);font-weight:600;}
+
+  .board{
+    position:relative;
+    width:var(--board-size,320px);height:var(--board-size,320px);
+    background:var(--board);border-radius:18px;padding:var(--pad);
+    box-shadow:0 10px 40px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.03);
+    touch-action:none;
+  }
+  .grid{position:relative;width:100%;height:100%;}
+  .cell{position:absolute;border-radius:8px;background:var(--cell);
+    box-shadow:inset 0 0 0 1px var(--cell-edge);}
+  .cell.obstacle{background:var(--obstacle);
+    box-shadow:inset 0 0 0 1px #05070a, inset 0 2px 6px rgba(0,0,0,.6);}
+  .piece{
+    position:absolute;border-radius:50%;
+    transition:left .16s cubic-bezier(.34,1.25,.5,1), top .16s cubic-bezier(.34,1.25,.5,1);
+    z-index:3;
+  }
+  .piece.a{background:radial-gradient(circle at 35% 30%, #f2ad6b, var(--a));
+    box-shadow:0 3px 10px rgba(216,133,59,.5);}
+  .piece.b{background:radial-gradient(circle at 35% 30%, #6fc0f0, var(--b));
+    box-shadow:0 3px 10px rgba(59,155,216,.5);z-index:2;}
+  .merged{
+    position:absolute;border-radius:50%;z-index:4;
+    background:radial-gradient(circle at 38% 32%, #eadfb0, #b9a86a);
+    box-shadow:0 0 22px rgba(220,200,140,.8);
+    animation:bloom .55s ease;
+  }
+  @keyframes bloom{0%{transform:scale(.6);opacity:.4}55%{transform:scale(1.22)}100%{transform:scale(1)}}
+
+  .pad{display:grid;grid-template-columns:repeat(3,58px);grid-template-rows:repeat(3,58px);
+    gap:8px;margin:22px 0 6px;}
+  .pad button{background:var(--cell);color:var(--ink);
+    border:1px solid var(--cell-edge);border-radius:12px;font-size:22px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:.12s;}
+  .pad button:active{background:var(--a);color:#101418;transform:scale(.94);}
+  .pad .spacer{visibility:hidden;}
+
+  .controls{display:flex;gap:10px;margin:6px 0 30px;}
+  .controls button{background:transparent;color:var(--muted);
+    border:1px solid var(--line);border-radius:10px;padding:9px 18px;font-size:14px;
+    font-family:inherit;font-style:italic;cursor:pointer;transition:.15s;}
+  .controls button:active{color:var(--ink);border-color:var(--a);}
+
+  .win{position:fixed;inset:0;background:rgba(8,11,14,.86);
+    display:none;flex-direction:column;align-items:center;justify-content:center;
+    z-index:50;backdrop-filter:blur(3px);text-align:center;padding:30px;}
+  .win.show{display:flex;animation:fade .4s ease;}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .win h2{font-style:italic;font-weight:500;font-size:30px;margin:0 0 6px;}
+  .win p{color:var(--muted);margin:0 0 22px;font-family:ui-monospace,Menlo,monospace;font-size:13px;}
+  .winBtns{display:flex;flex-direction:column;gap:10px;align-items:center;}
+  .win button{background:var(--a);color:#101418;border:none;border-radius:10px;
+    padding:12px 26px;font-size:15px;font-family:inherit;font-style:italic;cursor:pointer;
+    min-width:200px;}
+  .win button.secondary{background:transparent;color:var(--muted);
+    border:1px solid var(--line);}
+  .win button.secondary:active{color:var(--ink);border-color:var(--a);}
+  .hint{color:var(--muted);font-size:12px;margin-top:2px;height:16px;
+    font-family:ui-monospace,Menlo,monospace;letter-spacing:.03em;}
+</style>
+</head>
+<body>
+<header>
+  <h1>Become One</h1>
+  <div class="tagline">two parts of yourself move in opposite directions — make them one</div>
+</header>
+
+<div class="difficulty" id="difficulty">
+  <button data-tier="calm" class="active">calm</button>
+  <button data-tier="focused">focused</button>
+  <button data-tier="deep">deep</button>
+</div>
+
+<div class="meta">
+  <span>moves <b id="moveCount">0</b></span>
+  <span id="parInfo">par —</span>
+</div>
+
+<div class="board" id="board"><div class="grid" id="grid"></div></div>
+<div class="hint" id="hint">&nbsp;</div>
+
+<div class="pad">
+  <div class="spacer"></div><button data-dir="up">↑</button><div class="spacer"></div>
+  <button data-dir="left">←</button><div class="spacer"></div><button data-dir="right">→</button>
+  <div class="spacer"></div><button data-dir="down">↓</button><div class="spacer"></div>
+</div>
+
+<div class="controls">
+  <button id="reset">restart</button>
+  <button id="solveBtn">give up</button>
+  <button id="newGame">new puzzle</button>
+</div>
+
+<div class="win" id="win">
+  <h2 id="winHead">One.</h2>
+  <p id="winSub"></p>
+  <div class="winBtns">
+    <button id="winPath">see the shortest path</button>
+    <button id="winNext">again</button>
+  </div>
+</div>
+
+<script>
+const N = 5;
+const TIERS = { calm:[2,3], focused:[4,5], deep:[6,99] };
+let tier = 'calm';
+
+const board=document.getElementById('board'), grid=document.getElementById('grid');
+let CELL,GAP,PAD;
+function sizeBoard(){
+  const vw=Math.min(window.innerWidth-32,360);
+  const size=Math.max(260,Math.min(vw,360));
+  PAD=Math.round(size*0.04); GAP=Math.round(size*0.025);
+  const inner=size-PAD*2; CELL=(inner-GAP*(N-1))/N;
+  document.documentElement.style.setProperty('--board-size',size+'px');
+  document.documentElement.style.setProperty('--pad',PAD+'px');
+  document.querySelectorAll('.meta').forEach(m=>m.style.width=size+'px');
+  render();
+}
+const px=i=>i*(CELL+GAP);
+
+const DIRS={up:{dx:0,dy:-1},down:{dx:0,dy:1},left:{dx:-1,dy:0},right:{dx:1,dy:0}};
+const key=(a,b)=>a.x+','+a.y+'|'+b.x+','+b.y;
+const isWin=(a,b)=>a.x===b.x&&a.y===b.y;
+const eq=(p,q)=>p.x===q.x&&p.y===q.y;
+const blocked=(x,y,obs)=>(x<0||x>=N||y<0||y>=N)||obs.some(o=>o.x===x&&o.y===y);
+
+// A moves dir, B moves mirror(dir); each stops independently. Same-cell allowed (= win).
+function step(a,b,dir,obs){
+  const d=DIRS[dir]; let na={x:a.x,y:a.y}, nb={x:b.x,y:b.y};
+  if(!blocked(a.x+d.dx,a.y+d.dy,obs)) na={x:a.x+d.dx,y:a.y+d.dy};
+  if(!blocked(b.x-d.dx,b.y-d.dy,obs)) nb={x:b.x-d.dx,y:b.y-d.dy};
+  return [na,nb];
+}
+function solve(a0,b0,obs){
+  if(isWin(a0,b0))return 0;
+  const seen=new Set([key(a0,b0)]); let f=[{a:a0,b:b0}],d=0;
+  while(f.length){
+    d++; const nx=[];
+    for(const s of f) for(const dir in DIRS){
+      const [na,nb]=step(s.a,s.b,dir,obs); const k=key(na,nb);
+      if(seen.has(k))continue;
+      if(isWin(na,nb))return d;
+      seen.add(k); nx.push({a:na,b:nb});
+    }
+    f=nx; if(d>80)break;
+  }
+  return -1;
+}
+// returns the shortest list of directions from (a0,b0) to a merge, or null
+function solvePath(a0,b0,obs){
+  if(isWin(a0,b0))return [];
+  const seen=new Set([key(a0,b0)]);
+  let f=[{a:a0,b:b0,path:[]}],d=0;
+  while(f.length){
+    d++; const nx=[];
+    for(const s of f) for(const dir in DIRS){
+      const [na,nb]=step(s.a,s.b,dir,obs); const k=key(na,nb);
+      if(seen.has(k))continue;
+      const path=s.path.concat(dir);
+      if(isWin(na,nb))return path;
+      seen.add(k); nx.push({a:na,b:nb,path});
+    }
+    f=nx; if(d>80)break;
+  }
+  return null;
+}
+const rc=ex=>{while(true){const c={x:(Math.random()*N)|0,y:(Math.random()*N)|0};
+  if(!ex.some(e=>e.x===c.x&&e.y===c.y))return c;}};
+
+function generate(){
+  const [lo,hi]=TIERS[tier];
+  for(let t=0;t<12000;t++){
+    const oc=1+((Math.random()*3)|0);   // 1–3 stones for board variety
+    const used=[],obs=[];
+    for(let i=0;i<oc;i++){const o=rc(used);obs.push(o);used.push(o);}
+    const a=rc(used);used.push(a); const b=rc(used);used.push(b);
+    if(isWin(a,b))continue;
+    const d=solve(a,b,obs);
+    if(d>=lo && d<=hi) return {a,b,obs,par:d};
+  }
+  // relax to any solvable puzzle if the tier window was stubborn
+  for(let t=0;t<6000;t++){
+    const oc=1+((Math.random()*3)|0); const used=[],obs=[];
+    for(let i=0;i<oc;i++){const o=rc(used);obs.push(o);used.push(o);}
+    const a=rc(used);used.push(a); const b=rc(used);used.push(b);
+    if(isWin(a,b))continue; const d=solve(a,b,obs);
+    if(d>=2)return {a,b,obs,par:d};
+  }
+  return {a:{x:0,y:0},b:{x:4,y:4},obs:[{x:2,y:2}],par:-1};
+}
+
+let state,obstacles,par,moves,solved,startState,replaying=false;
+function newPuzzle(){
+  const g=generate();
+  state={a:{...g.a},b:{...g.b}};
+  obstacles=g.obs; par=g.par; moves=0; solved=false; replaying=false;
+  startState={a:{...g.a},b:{...g.b}};
+  document.getElementById('moveCount').textContent='0';
+  document.getElementById('parInfo').textContent= par>0?'par '+par:'par —';
+  document.getElementById('hint').innerHTML='&nbsp;';
+  document.getElementById('win').classList.remove('show');
+  render();
+}
+
+function render(){
+  if(!state)return;
+  grid.innerHTML='';
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+    const c=document.createElement('div'); c.className='cell';
+    if(obstacles&&obstacles.some(o=>o.x===x&&o.y===y))c.classList.add('obstacle');
+    c.style.width=CELL+'px';c.style.height=CELL+'px';
+    c.style.left=px(x)+'px';c.style.top=px(y)+'px';
+    grid.appendChild(c);
+  }
+  const ps=CELL*0.72, off=(CELL-ps)/2;
+  if(isWin(state.a,state.b)){
+    const m=document.createElement('div'); m.className='merged';
+    m.style.width=ps+'px';m.style.height=ps+'px';
+    m.style.left=px(state.a.x)+off+'px';m.style.top=px(state.a.y)+off+'px';
+    grid.appendChild(m);
+    return;
+  }
+  const pa=document.createElement('div'); pa.className='piece a';
+  pa.style.width=ps+'px';pa.style.height=ps+'px';
+  pa.style.left=px(state.a.x)+off+'px';pa.style.top=px(state.a.y)+off+'px';
+  grid.appendChild(pa);
+  const pb=document.createElement('div'); pb.className='piece b';
+  pb.style.width=ps+'px';pb.style.height=ps+'px';
+  pb.style.left=px(state.b.x)+off+'px';pb.style.top=px(state.b.y)+off+'px';
+  grid.appendChild(pb);
+}
+
+function move(dir){
+  if(solved||replaying)return;
+  const [na,nb]=step(state.a,state.b,dir,obstacles);
+  if(eq(na,state.a)&&eq(nb,state.b))return;
+  state.a=na; state.b=nb; moves++;
+  document.getElementById('moveCount').textContent=moves;
+  render();
+  if(isWin(state.a,state.b)){
+    solved=true;
+    endPuzzle(moves===par ? 'optimal' : 'win');
+  }
+}
+
+// where the puzzle started — used to replay the optimal line
+function replayOptimal(){
+  document.getElementById('win').classList.remove('show');
+  state={a:{...startState.a},b:{...startState.b}};
+  render();
+  replaying=true; solved=true;
+  const path=solvePath(state.a,state.b,obstacles)||[];
+  const hint=document.getElementById('hint');
+  hint.textContent='watch — the shortest path ('+path.length+')';
+  let i=0;
+  const tick=()=>{
+    if(i>=path.length){ replaying=false; hint.innerHTML='&nbsp;'; return; }
+    const dir=path[i++];
+    const [na,nb]=step(state.a,state.b,dir,obstacles);
+    state.a=na; state.b=nb; render();
+    setTimeout(tick, isWin(state.a,state.b)?1:520);
+  };
+  setTimeout(tick,400);
+}
+
+// reason: 'optimal' (won at par) | 'win' (won over par) | 'giveup'
+function endPuzzle(reason){
+  const head=document.getElementById('winHead');
+  const sub=document.getElementById('winSub');
+  const pathBtn=document.getElementById('winPath');
+  const nextBtn=document.getElementById('winNext');
+  if(reason==='optimal'){
+    head.textContent='One.';
+    sub.textContent='the shortest path — '+moves+' move'+(moves===1?'':'s')+', perfectly done';
+    pathBtn.style.display='none';
+    nextBtn.textContent='again';
+  } else if(reason==='win'){
+    head.textContent='One.';
+    sub.textContent= par>0 ? moves+' moves · par '+par : moves+' moves';
+    pathBtn.style.display = par>0 ? '' : 'none';
+    nextBtn.textContent='again';
+  } else { // giveup
+    head.textContent='Apart.';
+    sub.textContent= par>0 ? 'there was a path in '+par : 'there was a path';
+    pathBtn.style.display = par>0 ? '' : 'none';
+    nextBtn.textContent='next';
+  }
+  setTimeout(()=>document.getElementById('win').classList.add('show'), reason==='giveup'?60:520);
+}
+
+document.querySelectorAll('.pad button[data-dir]').forEach(b=>b.addEventListener('click',()=>move(b.dataset.dir)));
+document.addEventListener('keydown',e=>{
+  const m={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'};
+  if(m[e.key]){e.preventDefault();move(m[e.key]);}
+});
+let sx,sy;
+board.addEventListener('touchstart',e=>{const t=e.touches[0];sx=t.clientX;sy=t.clientY;},{passive:true});
+board.addEventListener('touchend',e=>{
+  if(sx==null)return;const t=e.changedTouches[0];
+  const dx=t.clientX-sx,dy=t.clientY-sy;
+  if(Math.abs(dx)<20&&Math.abs(dy)<20){sx=null;return;}
+  if(Math.abs(dx)>Math.abs(dy))move(dx>0?'right':'left');else move(dy>0?'down':'up');
+  sx=null;
+},{passive:true});
+
+document.getElementById('difficulty').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  document.querySelectorAll('#difficulty button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); tier=b.dataset.tier; newPuzzle();
+});
+document.getElementById('reset').addEventListener('click',()=>{
+  if(!startState)return;
+  state={a:{...startState.a},b:{...startState.b}};
+  moves=0;solved=false;
+  document.getElementById('moveCount').textContent='0';
+  document.getElementById('win').classList.remove('show');
+  render();
+});
+document.getElementById('newGame').addEventListener('click',newPuzzle);
+document.getElementById('winNext').addEventListener('click',newPuzzle);
+document.getElementById('winPath').addEventListener('click',replayOptimal);
+
+document.getElementById('solveBtn').addEventListener('click',()=>{
+  if(solved||replaying)return;
+  const path=solvePath(state.a,state.b,obstacles);
+  if(!path){ document.getElementById('hint').textContent='no path from here — restart'; return; }
+  solved=true;
+  endPuzzle('giveup');
+});
+
+window.addEventListener('resize',sizeBoard);
+newPuzzle(); sizeBoard();
+</script>
+</body>
+</html>
